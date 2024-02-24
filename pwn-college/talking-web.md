@@ -14,14 +14,14 @@
 
 > Send an HTTP request using nc
 
-* `nc` takes URL and port in order to functin.
+`nc` takes URL and port in order to functin.
 
 ```
 /$ nc localhost 80
 GET / HTTP/1.1
 ```
 
-* We can send HTTP request using the `GET` method.
+We can send HTTP request using the `GET` method.
 
 
 
@@ -42,8 +42,9 @@ print(response.text)
 
 > Set the host header in an HTTP request using curl
 
-* The host header allows user to access a site out of multiple sites hosted on the same server.
-* In order to set the host-header, we need to use the `H` flag.
+The host header allows user to access a site out of multiple sites hosted on the same server.
+
+In order to set the host-header, we need to use the `H` flag.
 
 ```
 /$ curl -v -H 'Host: 3c22a6070842664437f7deb701d0ba73' localhost
