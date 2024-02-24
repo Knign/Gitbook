@@ -489,11 +489,13 @@ Cookie: session=eyJzdGF0ZSI6Mn0.ZIdGGw.vET_YPzKaN7NNySdDm80v_VRahM
 
 ```
 
+{% code title="Request.txt" %}
 ```Requests.txt
 /$ nc localhost 80
 GET / HTTP/1.1
 Cookie: session=eyJzdGF0ZSI6M30.ZIdGTg.7DxhB2c_HvhkfSS5ADGrIgK-eq4
 ```
+{% endcode %}
 
 
 
