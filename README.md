@@ -14,6 +14,4 @@ layout:
 
 # Home
 
-This is a collection of write-ups for various CTF challenges and machines I have solved.&#x20;
-
-It is updated on most days and will continue to be for the foreseeable future.
+This collection has been migrated to [https://writeups-kunull.vercel.app](https://writeups-kunull.vercel.app).
