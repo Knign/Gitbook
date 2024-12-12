@@ -14,4 +14,4 @@ layout:
 
 # Home
 
-This collection has been moved to [https://writeups-kunull.vercel.app](https://writeups-kunull.vercel.app).
+This collection has been moved to [https://writeups.kunull.net](https://writeups.kunull.net).
